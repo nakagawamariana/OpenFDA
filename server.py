@@ -6,7 +6,8 @@ import socketserver
 #import practica5
 import practica6
 #import pruebas12
-PORT = 8008
+PORT = 8000
+
 
 
 
