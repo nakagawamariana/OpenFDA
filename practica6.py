@@ -24,10 +24,9 @@ class testHTTPRequestHandler (http.server.BaseHTTPRequestHandler):
     OPENFDA_API_URL = "api.fda.gov"
     OPENFDA_API_EVENT = "/drug/event.json"
 
-
-    def get_event(self):
+    def get_event(self, limit):
         conn = http.client.HTTPSConnection(self.OPENFDA_API_URL)
-        conn.request("GET", self.OPENFDA_API_EVENT + "?limit=10")
+        conn.request("GET", self.OPENFDA_API_EVENT + "?limit=" + limit)
         r1 = conn.getresponse()
         print (r1.status, r1.reason)
         data1 = r1.read()
@@ -35,9 +34,9 @@ class testHTTPRequestHandler (http.server.BaseHTTPRequestHandler):
         event = data1
         return event
 
-    def get_SEARCH_drug(self, drug):
+    def get_SEARCH_drug(self, drug,limit):
         conn = http.client.HTTPSConnection(self.OPENFDA_API_URL)
-        conn.request("GET", self.OPENFDA_API_EVENT + '?search=patient.drug.medicinalproduct='+ drug +'&limit=10')
+        conn.request("GET", self.OPENFDA_API_EVENT + '?search=patient.drug.medicinalproduct='+ drug +'&limit='+limit)
         r1 = conn.getresponse()
         print (r1.status, r1.reason)
         data1 = r1.read()
@@ -45,9 +44,9 @@ class testHTTPRequestHandler (http.server.BaseHTTPRequestHandler):
         event = data1
         return event
 
-    def get_SEARCH_company(self, comp):
+    def get_SEARCH_company(self, comp, limit):
         conn = http.client.HTTPSConnection(self.OPENFDA_API_URL)
-        conn.request("GET", self.OPENFDA_API_EVENT + '?search=companynumb:'+ comp +'&limit=10')
+        conn.request("GET", self.OPENFDA_API_EVENT + '?search=companynumb:'+ comp +'&limit=' + limit)
         r1 = conn.getresponse()
         print (r1.status, r1.reason)
         data1 = r1.read()
@@ -67,9 +66,13 @@ class testHTTPRequestHandler (http.server.BaseHTTPRequestHandler):
                 <form method="get" action="listDrugs">
                     <input type="submit" value = "Drug list: Send to OpenFDA">
                     </input>
+                    Limit: <input type="text" name = "limit" size="5">
+                    </input>
                 </form>
                 <form method="get" action="listCompanies">
                     <input type="submit" value= "Companies list: Send to OpenFDA">
+                    </input>
+                    Limit: <input type="text" name = "limit" size="5">
                     </input>
                 </form>
                 <form method="get" action = "searchDrug">
@@ -77,11 +80,15 @@ class testHTTPRequestHandler (http.server.BaseHTTPRequestHandler):
                     </input>
                     <input type="submit" value = "Send drug to OpenFDA">
                     </input>
+                    Limit: <input type="text" name = "limit" size="5">
+                    </input>
                 </form>
                 <form method="get" action="searchCompany">
                     <input type="text" name= "company">
                     </input>
                     <input type="submit" value = "Send company to OpenFDA">
+                    </input>
+                    Limit: <input type="text" name = "limit" size="5">
                     </input>
             </body>
 
@@ -108,20 +115,20 @@ class testHTTPRequestHandler (http.server.BaseHTTPRequestHandler):
 		"""
         return html2
 
-    def get_drugs(self):
+    def get_drugs(self,limit):
         med_list = []
-        data2 = self.get_event()
+        data2 = self.get_event(limit)
         events = json.loads(data2)
         results =events["results"]
-        for i in range(10):
-            patient = results[i]["patient"]
+        for i in results:
+            patient = i["patient"]
             drug = patient["drug"]
             med_prod = drug[0]["medicinalproduct"]
             med_list.append(med_prod)
         return med_list
 
-    def get_COMPANIES(self,drug):
-        event = self.get_SEARCH_drug(drug)
+    def get_COMPANIES(self,drug,limit):
+        event = self.get_SEARCH_drug(drug,limit)
         companies_list = []
         info = json.loads(event)
         results = info["results"]
@@ -129,8 +136,8 @@ class testHTTPRequestHandler (http.server.BaseHTTPRequestHandler):
             companies_list += [event ['companynumb']]
         return companies_list
 
-    def get_COMPANIES_list(self):
-        event = self.get_event()
+    def get_COMPANIES_list(self,limit):
+        event = self.get_event(limit)
         companies_list = []
         info = json.loads(event)
         results = info["results"]
@@ -138,8 +145,8 @@ class testHTTPRequestHandler (http.server.BaseHTTPRequestHandler):
             companies_list += [event ['companynumb']]
         return companies_list
 
-    def get_company_search(self,drug):
-        event = self.get_SEARCH_company(drug)
+    def get_company_search(self,drug,limit):
+        event = self.get_SEARCH_company(drug,limit)
         drugs_list = []
         info = json.loads(event)
         results = info["results"]
@@ -152,33 +159,37 @@ class testHTTPRequestHandler (http.server.BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/html')
         self.end_headers()
 
+
         if self.path == '/':
             html = self.get_main_page()
             self.wfile.write(bytes(html, "utf8")) #wfile es un fichero enganchado con el cliente
 
         elif '/listDrugs' in self.path:
-            items=self.get_drugs()
+            limit = self.path.split("=")[-1]
+            items=self.get_drugs(limit)
             html = self.get_second_page(items)
             self.wfile.write(bytes(html, "utf8"))
 
         elif "searchDrug?drug=" in self.path:
-            url = self.path
-            drug= url.split("=")[-1]
-            items= self.get_COMPANIES(drug)
+            limit = self.path.split("=")[-1]
+            url = self.path.split("=")[2]
+            drug = url.split("&")[0]
+            items= self.get_COMPANIES(drug,limit)
             html = self.get_second_page(items)
             self.wfile.write(bytes(html, "utf8"))
 
         elif '/listCompanies' in self.path:
-            items = self.get_COMPANIES_list()
+            limit = self.path.split("=")[-1]
+            items = self.get_COMPANIES_list(limit)
             html = self.get_second_page(items)
             self.wfile.write(bytes(html, "utf8"))
 
         elif "searchCompany?company=" in self.path:
-            url = self.path
-            drug= url.split("=")[-1]
-            items = self.get_company_search(drug)
+            limit = self.path.split("=")[-1]
+            url = self.path.split("=")[2]
+            drug = url.split("&")[0]
+            items = self.get_company_search(drug,limit)
             html = self.get_second_page(items)
             self.wfile.write(bytes(html, "utf8"))
 
         return
-
