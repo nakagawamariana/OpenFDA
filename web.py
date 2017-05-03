@@ -119,7 +119,7 @@ class OpenFDAParser():
 	
 class OpenFDAHTML():
 
-    def get_main_page(self):
+    def main_page(self):
         html = '''
         <html>
             <head>
@@ -127,7 +127,7 @@ class OpenFDAHTML():
                 <title>OpenFDA Cool App</title>
                 </form>
             </head>
-            <body>
+            <body bgcolor=#CEE3F6>
                 <h1>OpenFDA Client</h1>
                 <form method="get" action="listDrugs">
                     <input type="submit" value = "Drug list: Send to OpenFDA">
@@ -141,12 +141,14 @@ class OpenFDAHTML():
                     Limit: <input type="text" name = "limit" size="5">
                     </input>
                 </form>
+                <h5>Introduzca el medicamento que desea buscar:</h5>
                 <form method="get" action = "searchDrug">
                     <input type="text" name = "drug">
                     </input>
                     <input type="submit" value = "Send drug to OpenFDA">
                     </input>
                 </form>
+                <h5>Introduzca el proveedor que desea buscar:</h5>
                 <form method="get" action="searchCompany">
                     <input type="text" name= "company">
                     </input>
@@ -154,7 +156,7 @@ class OpenFDAHTML():
                     </input>
                    
 				</form>
-				<form method="get" action="GenderList">
+				<form method="get" action="listGender">
 					<input type = "submit" value= "Gender List: Send to OpenFDA">
 					</input>
 					Limit: <input type= "text" name = "limit" size ="5">
@@ -171,9 +173,10 @@ class OpenFDAHTML():
         html2 = """
 		<html>
         	<head>
+                <link rel="shortcut icon" href="https://pbs.twimg.com/profile_images/701113332183371776/57JHEzt7.jpg">
 				<title>OpenFDA Cool App</title>
 			</head>
-        	<body>
+        	<body bgcolor=#CEE3F6>
 				<ol>
 		"""
         for drug in med_list:
@@ -187,15 +190,15 @@ class OpenFDAHTML():
 
     def get_error_page(self):
         html3 = """
-            <html>
-                <head>
-                    <body>
-                        <h1>Error 404</h1>
-                    <body>
-                </head>
-                    <body>
-                        Page not found
-                    </body>
+        <html>
+            <head>
+                <body>
+                   <h1>Error 404</h1>
+                <body>
+            </head>
+                <body>
+                    Page not found
+                </body>
             </html>
         """
         return html3
@@ -211,7 +214,7 @@ class testHTTPRequestHandler (http.server.BaseHTTPRequestHandler):
         if self.path == '/':
             self.send_response(200)
             HTML = OpenFDAHTML()
-            html = HTML.get_main_page()
+            html = HTML.main_page()
             self.execute(html) #wfile es un fichero enganchado con el cliente
 
         elif '/listDrugs' in self.path:
@@ -250,7 +253,7 @@ class testHTTPRequestHandler (http.server.BaseHTTPRequestHandler):
             html = HTML.get_second_page(items)
             self.execute(html)
 
-        elif "/GenderList" in self.path:
+        elif "/listGender" in self.path:
             self.send_response(200)
             HTML = OpenFDAHTML()
             parser = OpenFDAParser()
@@ -266,13 +269,13 @@ class testHTTPRequestHandler (http.server.BaseHTTPRequestHandler):
 
         elif "/redirect" in self.path:
             self.send_response(302)
-            self.send_header('Location', 'http://localhost:8001/')
+            self.send_header('Location', 'http://localhost:8000/')
             self.end_headers()
 
         else:
-            HTML = OpenFDAHTML()
             self.send_response(404)
-            html= HTML.get_error_page()
-            self.wfile.write(bytes(html, "utf8"))
-
+            HTML = OpenFDAHTML()
+            html=HTML.get_error_page()
+            self.execute(html)
+           
         return
